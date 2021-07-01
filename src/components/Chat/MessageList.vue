@@ -1,5 +1,13 @@
 <template>
-  <div class="chat-messages" ref="chatMessages">
+  <div class="chat-messages" ref="chatMessages" @scroll="handleScroll">
+    <button
+      @click="scrollToBottom"
+      class="fab btn-scroll-bottom"
+      v-if="showScrollButton"
+    >
+      <v-icon>mdi-chevron-down</v-icon>
+    </button>
+
     <div :key="name" v-for="(value, name) in messages">
       <div class="message-day">
         <span>{{ name | dateFormat }}</span>
@@ -39,11 +47,14 @@ import { Messages } from "@/types/messages";
 export default class MessageList extends Vue {
   @Prop() messages?: Messages;
 
+  showScrollButton = false;
+  alwaysScrollToBottom = true;
+
   $refs!: {
     chatMessages: HTMLDivElement;
   };
 
-  mounted(): void {
+  mounted() {
     this.scrollToBottom();
   }
 
@@ -51,17 +62,50 @@ export default class MessageList extends Vue {
     this.$refs.chatMessages.scrollTop = this.$refs.chatMessages.scrollHeight;
   }
 
+  handleScroll() {
+    const { scrollHeight, scrollTop, offsetHeight } = this.$refs.chatMessages;
+    const scrollBottom = scrollHeight - scrollTop - offsetHeight;
+    this.showScrollButton = scrollBottom > 100;
+    this.alwaysScrollToBottom = !this.showScrollButton;
+  }
+
   @Watch("messages", { deep: true })
   handleMessageChanged() {
-    this.$nextTick(function () {
-      this.scrollToBottom();
-    });
+    if (this.alwaysScrollToBottom) {
+      this.$nextTick(function () {
+        this.scrollToBottom();
+      });
+    }
   }
 }
 </script>
 
 <style scoped>
+.chat-messages {
+  flex: 1 1 0;
+  position: relative;
+  overflow-y: scroll;
+  padding: 8px 60px;
+}
+
+.fab {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.1);
+}
+
+.btn-scroll-bottom {
+  position: fixed;
+  right: 24px;
+  bottom: 100px;
+  background: #fff;
+}
+
 .message-day {
+  position: sticky;
+  position: -webkit-sticky;
+  top: 0px;
   text-align: center;
 }
 

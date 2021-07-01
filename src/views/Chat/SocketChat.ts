@@ -1,8 +1,10 @@
 import Vue from "vue";
 import { Component } from "vue-property-decorator";
 import { Message as StompMessage } from "webstomp-client";
+import api from "@/services/api";
 import socket from "@/services/socket";
 import { Message, Contact, Messages, User } from "@/types";
+import { groupBy } from "@/helpers";
 
 @Component
 export default class SocketChat extends Vue {
@@ -22,17 +24,56 @@ export default class SocketChat extends Vue {
     this.$refs.messageInput.focus();
   }
 
+  get equipmentId() {
+    return this.user.entityType === "equipment"
+      ? this.user.id
+      : this.selectedContact.id;
+  }
+
+  get userId() {
+    return this.user.entityType === "user"
+      ? this.user.id
+      : this.selectedContact.id;
+  }
+
+  async fetchMessages() {
+    const { data: chatMessages } = await api.get<Array<Message>>("/messages", {
+      params: {
+        userId: this.userId,
+        equipmentId: this.equipmentId,
+      },
+    });
+
+    const messages: Array<Message> = chatMessages.map((item) => {
+      return {
+        ...item,
+        timestamp: new Date(item.timestamp),
+        isFromSender: this.user.chatUsername === item.sender,
+      };
+    });
+
+    this.messages = groupBy(messages, (message) =>
+      message.timestamp.toLocaleDateString()
+    );
+  }
+
   setupSocket() {
     socket.connect({}, () => {
       socket.subscribe(
-        `/topic/chat/${this.user.name}`,
+        `/topic/chat/${this.user.chatUsername}`,
         this.handleMessageReceived
       );
     });
   }
 
+  changeSocketSubscription(oldContactName: string, newContactName: string) {
+    socket.unsubscribe(`/topic/chat/${oldContactName}`);
+    socket.subscribe(`/topic/chat/${newContactName}`, this.handleMessageReceived);
+  }
+
   handleContactChanged(contact: Contact) {
     this.selectedContact = contact;
+    this.fetchMessages();
   }
 
   addMessageToChat(message: Message) {
@@ -43,10 +84,12 @@ export default class SocketChat extends Vue {
   }
 
   handleMessageReceived(stompMessage: StompMessage) {
-    const message = JSON.parse(stompMessage.body);
-    message.timestamp = new Date();
+    const message = JSON.parse(stompMessage.body) as Message;
+    if (this.selectedContact.chatUsername !== `${message.sender}`) {
+      return;
+    }
     message.isFromSender = false;
-    message.id = Math.floor(Math.random() * 1000000);
+    message.timestamp = new Date(message.timestamp);
     this.addMessageToChat(message);
   }
 
@@ -54,19 +97,22 @@ export default class SocketChat extends Vue {
     const timestamp = new Date();
 
     try {
-      const message: Message = {
-        to: this.selectedContact.name,
+      const message: Omit<Message, "isFromSender"> = {
+        equipmentId: this.equipmentId,
+        userId: this.userId,
         content: this.message,
         timestamp: timestamp,
-        isFromSender: true,
-        sender: this.user.senderType,
+        sender: this.user.chatUsername,
+        to: this.selectedContact.chatUsername,
       };
 
       socket.send("/chat", JSON.stringify(message));
-      this.addMessageToChat(message);
+      this.addMessageToChat({ ...message, isFromSender: true });
       this.message = "";
-    } catch {
-      console.log("Não foi possível enviar a mensagem");
+    } catch (e) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(e);
+      }
     }
   }
 }

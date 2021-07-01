@@ -42,17 +42,36 @@
 import { Component } from "vue-property-decorator";
 import ChatContainer from "@/components/Chat/Container.vue";
 import SocketChat from "./SocketChat";
-
 @Component({
   components: {
     ChatContainer,
   },
 })
 export default class UserChat extends SocketChat {
-  created() {
-    this.user = { name: "Usuário 1", senderType: "user" };
-    this.contacts = [{ id: 1, name: "Equipamento 1" }];
+  async created() {
+    this.user = {
+      id: 1,
+      name: "Usuário 1",
+      chatUsername: "user1",
+      entityType: "user",
+    };
+    this.contacts = [
+      {
+        id: 1,
+        name: "Equipamento 1",
+        chatUsername: "equipment1",
+        entityType: "equipment",
+      },
+      {
+        id: 2,
+        name: "Equipamento 2",
+        chatUsername: "equipment2",
+        entityType: "equipment",
+      },
+    ];
     this.selectedContact = this.contacts[0];
+
+    await this.fetchMessages();
   }
 }
 </script>

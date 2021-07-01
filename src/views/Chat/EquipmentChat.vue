@@ -68,29 +68,49 @@ export default class EquipmentChat extends SocketChat {
   selectedEquipmen = {};
   equipments: Array<Contact> = [];
 
-  created() {
-    this.contacts = [{ id: 1, name: "Usuário 1" }];
+  async created() {
+    this.contacts = [
+      { id: 1, name: "Usuário 1", chatUsername: "user1", entityType: "user" },
+      { id: 2, name: "Usuário 2", chatUsername: "user2", entityType: "user" },
+      { id: 3, name: "Usuário 3", chatUsername: "user3", entityType: "user" },
+    ];
     this.selectedContact = this.contacts[0];
 
     this.equipments = [
-      { id: 1, name: "Equipamento 1" },
-      { id: 2, name: "Equipamento 2" },
+      {
+        id: 1,
+        name: "Equipamento 1",
+        chatUsername: "equipment1",
+        entityType: "equipment",
+      },
+      {
+        id: 2,
+        name: "Equipamento 2",
+        chatUsername: "equipment2",
+        entityType: "equipment",
+      },
     ];
 
     this.selectedEquipmentId = 1;
-    this.user = { name: this.equipments[0].name, senderType: "equipment" };
+    this.user = this.equipments[0];
+
+    await this.fetchMessages();
   }
 
   @Watch("selectedEquipmentId")
-  handleSelectedEquipmentIdChanged() {
-    const equip = this.equipments.find(
+  handleSelectedEquipmentIdChanged(_: number, oldValue: number) {
+    const newEquip = this.equipments.find(
       (item) => item.id === this.selectedEquipmentId
     );
-    if (equip) {
-      this.user = {
-        name: equip.name,
-        senderType: "equipment",
-      };
+    const oldEquip = this.equipments.find((item) => item.id === oldValue);
+
+    if (newEquip && oldEquip) {
+      this.changeSocketSubscription(
+        oldEquip.chatUsername,
+        newEquip.chatUsername
+      );
+      this.user = newEquip;
+      this.fetchMessages();
     }
   }
 }

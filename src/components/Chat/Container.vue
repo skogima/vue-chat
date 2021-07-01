@@ -68,14 +68,6 @@ export default class ChatContainer extends Vue {
   background: #eceff1;
 }
 
-.chat-messages {
-  flex: 1;
-  overflow-y: scroll;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-}
-
 .chat-input {
   padding: 8px;
   background: #fff;

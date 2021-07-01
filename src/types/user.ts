@@ -1,6 +1,8 @@
-import { Sender } from "./sender";
+import { EntityType } from "./entityType";
 
 export interface User {
+  id: number;
   name: string;
-  senderType: Sender;
+  entityType: EntityType;
+  chatUsername: string;
 };

@@ -1,9 +1,9 @@
-import { Sender } from "./sender";
-
 export interface Message {
+  userId: number;
+  equipmentId: number;
   content: string;
   timestamp: Date;
-  sender: Sender;
-  isFromSender: boolean;
+  sender: string;
   to: string;
+  isFromSender: boolean;
 };

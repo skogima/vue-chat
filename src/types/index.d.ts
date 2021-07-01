@@ -1,5 +1,5 @@
 export * from "./contact";
 export * from "./message";
 export * from "./messages";
-export * from "./sender";
+export * from "./entityType";
 export * from "./user";
